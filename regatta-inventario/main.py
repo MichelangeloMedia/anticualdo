@@ -198,6 +198,25 @@ def borrar_caja(caja_id: int):
 # Productos
 # --------------------------------------------------------------------------
 
+@app.get("/api/buscar")
+def buscar_productos(q: str = ""):
+    termino = q.strip()
+    if not termino:
+        return {"resultados": []}
+    like = f"%{termino}%"
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT p.id, p.nombre, p.codigo_interno, p.stock, p.precio, p.foto,
+                      c.id AS caja_id, c.nombre AS caja_nombre
+               FROM productos p
+               JOIN cajas c ON c.id = p.caja_id
+               WHERE p.nombre LIKE ? OR p.codigo_interno LIKE ?
+               ORDER BY c.nombre, p.nombre""",
+            (like, like),
+        ).fetchall()
+        return {"resultados": [dict(r) for r in rows]}
+
+
 @app.get("/api/cajas/{caja_id}/productos")
 def listar_productos_de_caja(caja_id: int):
     with get_db() as conn:
@@ -308,4 +327,3 @@ def _borrar_archivo_foto(nombre_archivo: str):
 
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 app.mount("/", StaticFiles(directory=BASE_DIR / "static", html=True), name="static")
-
