@@ -26,6 +26,8 @@ from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+import contabilium
+
 BASE_DIR = Path(__file__).parent
 
 # DATA_DIR es donde vive todo lo que tiene que persistir (base y fotos).
@@ -192,6 +194,36 @@ def borrar_caja(caja_id: int):
             _borrar_archivo_foto(f["foto"])
         conn.execute("DELETE FROM cajas WHERE id=?", (caja_id,))
     return {"ok": True}
+
+
+@app.get("/api/contabilium/estado")
+def contabilium_estado():
+    return {
+        "configurado": contabilium.configurado(),
+        "dry_run": contabilium.DRY_RUN,
+        "rubro": contabilium.RUBRO,
+    }
+
+
+@app.post("/api/cajas/{caja_id}/empujar-contabilium")
+def empujar_caja_contabilium(caja_id: int):
+    with get_db() as conn:
+        caja = conn.execute("SELECT * FROM cajas WHERE id=?", (caja_id,)).fetchone()
+        if not caja:
+            raise HTTPException(404, "Caja no encontrada")
+        productos = conn.execute(
+            "SELECT * FROM productos WHERE caja_id=?", (caja_id,)
+        ).fetchall()
+
+    if not contabilium.configurado():
+        raise HTTPException(400, "Faltan las credenciales de Contabilium en el servidor")
+
+    try:
+        resumen = contabilium.empujar_caja([dict(p) for p in productos])
+    except contabilium.ContabiliumError as e:
+        raise HTTPException(502, f"Error de Contabilium: {e}")
+
+    return {"caja": caja["nombre"], **resumen}
 
 
 # --------------------------------------------------------------------------

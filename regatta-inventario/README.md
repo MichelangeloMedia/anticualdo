@@ -63,3 +63,40 @@ Cuando quieras, armamos un QR por caja que apunte directo a la URL pública
 de Railway filtrada por esa caja, para pegarlo físicamente y escanearlo con
 la cámara. Convendría esperar a tener la URL definitiva de Railway antes de
 generarlos (si no, después hay que reimprimir todo).
+
+## Integración con Contabilium
+
+La app puede subir los productos de una caja a Contabilium bajo el rubro
+"Regatta". Es de una sola dirección (esta app → Contabilium) y **solo crea
+productos nuevos**: si un código ya existe en Contabilium, lo saltea y no lo
+toca. Esto es a propósito, para nunca disparar la sincronización con
+MercadoLibre sobre publicaciones vivas.
+
+### Modo simulación (dry-run)
+
+Por seguridad, la integración arranca en **modo simulación**: cuando apretás
+"Subir a Contabilium" en una caja, te muestra qué crearía y qué saltearía,
+pero **no crea nada real**. Sirve para revisar todo antes de que sea de
+verdad.
+
+Cuando confirmes que el formato es correcto (probando con un producto real),
+recién ahí pasás a modo real cambiando la variable `CONTABILIUM_DRY_RUN` a
+`false`.
+
+### Variables de entorno (Railway)
+
+- `CONTABILIUM_CLIENT_ID` — client_id de la API (Mi cuenta → Config → API → Credenciales)
+- `CONTABILIUM_CLIENT_SECRET` — client_secret de la API
+- `CONTABILIUM_RUBRO` — rubro a asignar (opcional, default `Regatta`)
+- `CONTABILIUM_DRY_RUN` — `true` (default, simula) o `false` (crea de verdad)
+
+Si no cargás las credenciales, el botón "Subir a Contabilium" avisa que
+falta configurarlas y no hace nada.
+
+### Importante antes de pasar a modo real
+
+El formato exacto del producto que se crea (campos del POST) está armado
+según la documentación, pero conviene validarlo con **un solo producto de
+prueba** en tu Contabilium real antes de subir una caja entera. Si algún
+campo no calza (por ejemplo cómo Contabilium espera el rubro o el stock
+inicial), se ajusta en el archivo `contabilium.py`.
