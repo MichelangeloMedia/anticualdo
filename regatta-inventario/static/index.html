@@ -37,7 +37,10 @@
   <div class="detalle-header">
     <button id="btn-volver" class="btn btn-ghost">← Volver a cajas</button>
     <h2 id="titulo-caja"></h2>
-    <button id="btn-nuevo-producto" class="btn btn-primary">+ Agregar producto</button>
+    <div class="detalle-acciones">
+      <button id="btn-qr-caja" class="btn btn-ghost">Ver QR</button>
+      <button id="btn-nuevo-producto" class="btn btn-primary">+ Agregar producto</button>
+    </div>
   </div>
   <div id="grid-productos" class="grid-productos"></div>
   <p id="msg-sin-productos" class="msg-vacio" hidden>Esta caja todavía no tiene productos.</p>
@@ -85,8 +88,25 @@
   </div>
 </div>
 
+<!-- Modal: QR de la caja -->
+<div id="modal-qr" class="modal-overlay" hidden>
+  <div class="modal modal-qr-box">
+    <h3>QR de la caja</h3>
+    <div id="qr-etiqueta" class="qr-etiqueta">
+      <div id="qr-imagen" class="qr-imagen"></div>
+      <div id="qr-nombre" class="qr-nombre"></div>
+    </div>
+    <p class="qr-ayuda">Escaneá con la cámara del celular para ver el contenido de esta caja.</p>
+    <div class="modal-acciones">
+      <button class="btn btn-ghost" data-cerrar-modal="modal-qr">Cerrar</button>
+      <button id="btn-imprimir-qr" class="btn btn-primary">Imprimir</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" hidden></div>
 
+<script src="/qrcode.min.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

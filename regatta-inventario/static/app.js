@@ -46,6 +46,9 @@ function mostrarVistaCajas() {
   el("vista-cajas").hidden = false;
   el("vista-productos").hidden = true;
   cajaActualId = null;
+  if (location.hash.startsWith("#caja-")) {
+    history.replaceState(null, "", location.pathname);
+  }
   cargarCajas();
 }
 
@@ -53,6 +56,9 @@ function mostrarVistaProductos(cajaId) {
   cajaActualId = cajaId;
   el("vista-cajas").hidden = true;
   el("vista-productos").hidden = false;
+  if (location.hash !== `#caja-${cajaId}`) {
+    history.replaceState(null, "", `#caja-${cajaId}`);
+  }
   cargarProductos(cajaId);
 }
 
@@ -333,6 +339,49 @@ el("btn-guardar-producto").addEventListener("click", async () => {
   cargarProductos(cajaActualId);
 });
 
+// ---------------- QR de la caja ----------------
+
+el("btn-qr-caja").addEventListener("click", () => {
+  if (!cajaActualId) return;
+  const nombreCaja = el("titulo-caja").textContent;
+  const url = `${location.origin}/#caja-${cajaActualId}`;
+
+  el("qr-imagen").innerHTML = "";
+  new QRCode(el("qr-imagen"), {
+    text: url,
+    width: 220,
+    height: 220,
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  el("qr-nombre").textContent = nombreCaja;
+  abrirModal("modal-qr");
+});
+
+el("btn-imprimir-qr").addEventListener("click", () => {
+  const etiqueta = el("qr-etiqueta").innerHTML;
+  const ventana = window.open("", "_blank", "width=400,height=500");
+  ventana.document.write(`
+    <html>
+      <head>
+        <title>QR ${el("qr-nombre").textContent}</title>
+        <style>
+          body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+          .etiqueta { text-align: center; padding: 20px; border: 2px solid #000; border-radius: 8px; }
+          .etiqueta img, .etiqueta canvas { display: block; margin: 0 auto; }
+          .nombre { margin-top: 12px; font-size: 20px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="etiqueta">${etiqueta}</div>
+        <script>
+          window.onload = function () { window.print(); window.onafterprint = function(){ window.close(); }; };
+        <\/script>
+      </body>
+    </html>
+  `);
+  ventana.document.close();
+});
+
 // ---------------- Utils ----------------
 
 function escapeHtml(str) {
@@ -343,4 +392,16 @@ function escapeHtml(str) {
 
 // ---------------- Init ----------------
 
-mostrarVistaCajas();
+function rutearDesdeHash() {
+  const m = location.hash.match(/^#caja-(\d+)$/);
+  if (m) {
+    mostrarVistaProductos(parseInt(m[1], 10));
+  } else {
+    mostrarVistaCajas();
+  }
+}
+
+// Si cambian el hash (ej. escanean otro QR con la app abierta), reruteamos
+window.addEventListener("hashchange", rutearDesdeHash);
+
+rutearDesdeHash();

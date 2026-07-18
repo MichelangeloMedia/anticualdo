@@ -238,6 +238,55 @@ body {
 
 .detalle-header h2 { margin: 0; color: var(--blue); }
 
+.detalle-acciones {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#vista-productos .detalle-acciones .btn-ghost {
+  color: var(--blue);
+  border: 1px solid var(--gray-line);
+}
+
+/* ---------- Modal QR ---------- */
+
+.modal-qr-box {
+  align-items: center;
+  text-align: center;
+}
+
+.qr-etiqueta {
+  background: var(--white);
+  border: 2px solid var(--charcoal);
+  border-radius: 8px;
+  padding: 16px;
+  display: inline-block;
+}
+
+.qr-imagen {
+  display: flex;
+  justify-content: center;
+}
+
+.qr-imagen img,
+.qr-imagen canvas {
+  display: block;
+}
+
+.qr-nombre {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.qr-ayuda {
+  font-size: 12px;
+  color: #888;
+  margin: 4px 0 0;
+}
+
 .grid-productos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
