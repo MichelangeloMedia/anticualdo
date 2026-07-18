@@ -22,6 +22,13 @@
 </header>
 
 <main id="vista-cajas" class="vista">
+  <div class="buscador">
+    <input id="input-buscar" type="search" placeholder="Buscar producto por nombre o código…" autocomplete="off">
+    <button id="btn-limpiar-buscar" class="btn btn-ghost" hidden>Limpiar</button>
+  </div>
+
+  <div id="resultados-busqueda" class="resultados-busqueda" hidden></div>
+
   <div id="grid-cajas" class="grid-cajas"></div>
   <p id="msg-sin-cajas" class="msg-vacio" hidden>Todavía no hay cajas cargadas. Creá la primera con "Nueva caja".</p>
 </main>

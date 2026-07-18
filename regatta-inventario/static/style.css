@@ -72,6 +72,95 @@ body {
   font-size: 15px;
 }
 
+/* ---------- Buscador ---------- */
+
+.buscador {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.buscador input {
+  flex: 1;
+  border: 1px solid var(--gray-line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  background: var(--white);
+}
+
+#vista-cajas .buscador .btn-ghost {
+  color: var(--blue);
+  border: 1px solid var(--gray-line);
+}
+
+.resultados-busqueda {
+  margin-bottom: 24px;
+}
+
+.resultados-titulo {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 10px;
+}
+
+.resultados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resultado-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.resultado-foto {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--gray-bg) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+  font-size: 14px;
+}
+
+.resultado-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.resultado-nombre {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.resultado-meta {
+  font-size: 12px;
+  color: #888;
+}
+
+.resultado-caja {
+  flex-shrink: 0;
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.resultado-caja:hover { background: #14235a; }
+
 /* ---------- Grid de cajas ---------- */
 
 .grid-cajas {
@@ -328,13 +417,18 @@ body {
   border-radius: 6px;
   padding: 8px;
   font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .modal-fila {
   display: flex;
   gap: 12px;
 }
-.modal-fila label { flex: 1; }
+.modal-fila label {
+  flex: 1;
+  min-width: 0;
+}
 
 .modal-acciones {
   display: flex;

@@ -117,18 +117,21 @@ el("btn-guardar-caja").addEventListener("click", async () => {
 
 let debounceBuscar = null;
 
-el("input-buscar").addEventListener("input", (e) => {
-  const termino = e.target.value.trim();
-  el("btn-limpiar-buscar").hidden = termino === "";
-  clearTimeout(debounceBuscar);
-  debounceBuscar = setTimeout(() => buscar(termino), 250);
-});
+const inputBuscar = el("input-buscar");
+if (inputBuscar) {
+  inputBuscar.addEventListener("input", (e) => {
+    const termino = e.target.value.trim();
+    el("btn-limpiar-buscar").hidden = termino === "";
+    clearTimeout(debounceBuscar);
+    debounceBuscar = setTimeout(() => buscar(termino), 250);
+  });
 
-el("btn-limpiar-buscar").addEventListener("click", () => {
-  el("input-buscar").value = "";
-  el("btn-limpiar-buscar").hidden = true;
-  limpiarResultados();
-});
+  el("btn-limpiar-buscar").addEventListener("click", () => {
+    el("input-buscar").value = "";
+    el("btn-limpiar-buscar").hidden = true;
+    limpiarResultados();
+  });
+}
 
 async function buscar(termino) {
   if (!termino) return limpiarResultados();
