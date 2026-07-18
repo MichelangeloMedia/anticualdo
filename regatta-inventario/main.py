@@ -104,9 +104,14 @@ def init_db():
             CREATE TABLE IF NOT EXISTS cajas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL UNIQUE,
+                rubro TEXT NOT NULL DEFAULT '',
                 creado_en TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # migración: si la base es vieja y no tiene la columna rubro, la agrega
+        cols = [c["name"] for c in conn.execute("PRAGMA table_info(cajas)").fetchall()]
+        if "rubro" not in cols:
+            conn.execute("ALTER TABLE cajas ADD COLUMN rubro TEXT NOT NULL DEFAULT ''")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS productos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,6 +135,7 @@ init_db()
 
 class CajaIn(BaseModel):
     nombre: str
+    rubro: str = ""
 
 
 class ProductoIn(BaseModel):
@@ -152,11 +158,18 @@ class ProductoUpdate(BaseModel):
 # Cajas
 # --------------------------------------------------------------------------
 
+def normalizar_rubro(texto: str) -> str:
+    """Normaliza el rubro para que variaciones de mayúsculas mapeen al mismo
+    valor en Contabilium (que distingue mayúsculas). Ej: 'ReGatta' -> 'Regatta'."""
+    limpio = " ".join(texto.split())  # colapsa espacios
+    return " ".join(palabra.capitalize() for palabra in limpio.split(" ")) if limpio else ""
+
+
 @app.get("/api/cajas")
 def listar_cajas():
     with get_db() as conn:
         rows = conn.execute("""
-            SELECT c.id, c.nombre, c.creado_en,
+            SELECT c.id, c.nombre, c.rubro, c.creado_en,
                    COUNT(p.id) AS cantidad_productos,
                    COALESCE(SUM(p.stock), 0) AS stock_total
             FROM cajas c
@@ -170,14 +183,15 @@ def listar_cajas():
 @app.post("/api/cajas")
 def crear_caja(caja: CajaIn):
     nombre = caja.nombre.strip()
+    rubro = normalizar_rubro(caja.rubro)
     if not nombre:
         raise HTTPException(400, "El nombre de la caja no puede estar vacío")
     with get_db() as conn:
         try:
-            cur = conn.execute("INSERT INTO cajas (nombre) VALUES (?)", (nombre,))
+            cur = conn.execute("INSERT INTO cajas (nombre, rubro) VALUES (?, ?)", (nombre, rubro))
         except sqlite3.IntegrityError:
             raise HTTPException(409, f"Ya existe una caja llamada '{nombre}'")
-        return {"id": cur.lastrowid, "nombre": nombre}
+        return {"id": cur.lastrowid, "nombre": nombre, "rubro": rubro}
 
 
 @app.delete("/api/cajas/{caja_id}")
@@ -201,7 +215,7 @@ def contabilium_estado():
     return {
         "configurado": contabilium.configurado(),
         "dry_run": contabilium.DRY_RUN,
-        "rubro": contabilium.RUBRO,
+        "iva": contabilium.IVA_DEFAULT,
     }
 
 
@@ -218,8 +232,12 @@ def empujar_caja_contabilium(caja_id: int):
     if not contabilium.configurado():
         raise HTTPException(400, "Faltan las credenciales de Contabilium en el servidor")
 
+    rubro = (caja["rubro"] or "").strip()
+    if not rubro:
+        raise HTTPException(400, "Esta caja no tiene un rubro asignado. Editá la caja y poné el rubro antes de subir.")
+
     try:
-        resumen = contabilium.empujar_caja([dict(p) for p in productos])
+        resumen = contabilium.empujar_caja([dict(p) for p in productos], rubro=rubro)
     except contabilium.ContabiliumError as e:
         raise HTTPException(502, f"Error de Contabilium: {e}")
 
