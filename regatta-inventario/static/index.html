@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario de Cajas — Lamperti Repuestos</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">LR</span>
+      <div>
+        <h1>Inventario de Cajas</h1>
+        <p class="subtitle">Lamperti Repuestos</p>
+      </div>
+    </div>
+    <button id="btn-nueva-caja" class="btn btn-primary">+ Nueva caja</button>
+  </div>
+</header>
+
+<main id="vista-cajas" class="vista">
+  <div id="grid-cajas" class="grid-cajas"></div>
+  <p id="msg-sin-cajas" class="msg-vacio" hidden>Todavía no hay cajas cargadas. Creá la primera con "Nueva caja".</p>
+</main>
+
+<main id="vista-productos" class="vista" hidden>
+  <div class="detalle-header">
+    <button id="btn-volver" class="btn btn-ghost">← Volver a cajas</button>
+    <h2 id="titulo-caja"></h2>
+    <button id="btn-nuevo-producto" class="btn btn-primary">+ Agregar producto</button>
+  </div>
+  <div id="grid-productos" class="grid-productos"></div>
+  <p id="msg-sin-productos" class="msg-vacio" hidden>Esta caja todavía no tiene productos.</p>
+</main>
+
+<!-- Modal: nueva caja -->
+<div id="modal-caja" class="modal-overlay" hidden>
+  <div class="modal">
+    <h3>Nueva caja</h3>
+    <label>Nombre de la caja
+      <input id="input-nombre-caja" type="text" placeholder="ej. REGATTA-01" autocomplete="off">
+    </label>
+    <div class="modal-acciones">
+      <button class="btn btn-ghost" data-cerrar-modal="modal-caja">Cancelar</button>
+      <button id="btn-guardar-caja" class="btn btn-primary">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: producto (crear / editar) -->
+<div id="modal-producto" class="modal-overlay" hidden>
+  <div class="modal">
+    <h3 id="titulo-modal-producto">Nuevo producto</h3>
+    <label>Nombre
+      <input id="input-producto-nombre" type="text" autocomplete="off">
+    </label>
+    <label>Código interno
+      <input id="input-producto-codigo" type="text" autocomplete="off">
+    </label>
+    <div class="modal-fila">
+      <label>Stock
+        <input id="input-producto-stock" type="number" step="1" value="0">
+      </label>
+      <label>Precio
+        <input id="input-producto-precio" type="number" step="0.01" value="0">
+      </label>
+    </div>
+    <label>Foto
+      <input id="input-producto-foto" type="file" accept="image/png, image/jpeg, image/webp">
+    </label>
+    <div class="modal-acciones">
+      <button class="btn btn-ghost" data-cerrar-modal="modal-producto">Cancelar</button>
+      <button id="btn-guardar-producto" class="btn btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

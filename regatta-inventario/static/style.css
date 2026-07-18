@@ -1,0 +1,358 @@
+:root {
+  --charcoal: #2E2E2E;
+  --yellow: #FFE600;
+  --white: #FFFFFF;
+  --blue: #1A2B6B;
+  --gray-bg: #F3F3F1;
+  --gray-line: #DCDCD8;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--gray-bg);
+  color: var(--charcoal);
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  background: var(--charcoal);
+  border-bottom: 4px solid var(--yellow);
+}
+
+.topbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--white);
+}
+
+.brand-mark {
+  background: var(--yellow);
+  color: var(--charcoal);
+  font-weight: 800;
+  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand h1 { font-size: 18px; margin: 0; }
+.brand .subtitle { margin: 0; font-size: 12px; color: #C9C9C9; }
+
+/* ---------- Layout ---------- */
+
+.vista {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.msg-vacio {
+  color: #7a7a76;
+  text-align: center;
+  margin-top: 60px;
+  font-size: 15px;
+}
+
+/* ---------- Grid de cajas ---------- */
+
+.grid-cajas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.caja-card {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  border-radius: var(--radius);
+  padding: 20px 16px 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.caja-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* cinta de embalaje, referencia visual a una caja real */
+.caja-card::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: -20px;
+  width: 140%;
+  height: 14px;
+  background: var(--yellow);
+  transform: rotate(-6deg);
+  opacity: 0.9;
+}
+
+.caja-card .caja-nombre {
+  position: relative;
+  font-weight: 700;
+  font-size: 16px;
+  margin: 22px 0 6px;
+  color: var(--blue);
+}
+
+.caja-card .caja-meta {
+  position: relative;
+  font-size: 13px;
+  color: #666;
+}
+
+.caja-card .caja-borrar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 2;
+}
+.caja-card .caja-borrar:hover { color: #C0392B; }
+
+/* ---------- Detalle de caja ---------- */
+
+.detalle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.detalle-header h2 { margin: 0; color: var(--blue); }
+
+.grid-productos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.producto-card {
+  background: var(--white);
+  border: 1px solid var(--gray-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.producto-foto {
+  width: 100%;
+  height: 140px;
+  background: var(--gray-bg) center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #A9A9A5;
+  font-size: 12px;
+  cursor: pointer;
+  position: relative;
+}
+
+.producto-foto input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.producto-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.producto-nombre {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.producto-codigo {
+  font-size: 12px;
+  color: #888;
+}
+
+.fila-stock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.fila-stock button {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-line);
+  background: var(--white);
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--blue);
+}
+.fila-stock button:hover { background: var(--gray-bg); }
+
+.fila-stock input {
+  width: 52px;
+  text-align: center;
+  border: 1px solid var(--gray-line);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.fila-precio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.fila-precio input {
+  flex: 1;
+  border: 1px solid var(--gray-line);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.producto-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.link-borrar {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+}
+.link-borrar:hover { color: #C0392B; }
+
+/* ---------- Botones ---------- */
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--yellow);
+  color: var(--charcoal);
+}
+.btn-primary:hover { background: #e6ce00; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.4);
+}
+#vista-productos .btn-ghost {
+  color: var(--blue);
+  border: 1px solid var(--gray-line);
+}
+
+/* ---------- Modales ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 340px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal h3 { margin: 0 0 4px; color: var(--blue); }
+
+.modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #444;
+}
+
+.modal input {
+  border: 1px solid var(--gray-line);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.modal-fila {
+  display: flex;
+  gap: 12px;
+}
+.modal-fila label { flex: 1; }
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- Toast ---------- */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--charcoal);
+  color: var(--white);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 100;
+}
+
+@media (max-width: 480px) {
+  .modal-fila { flex-direction: column; }
+}
