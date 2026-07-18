@@ -287,6 +287,60 @@ body {
   margin: 4px 0 0;
 }
 
+/* ---------- Modal Contabilium ---------- */
+
+.cuerpo-contabilium {
+  font-size: 14px;
+}
+
+.cont-cargando, .cont-aviso {
+  color: #666;
+  font-size: 14px;
+}
+
+.cont-modo {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin: 0 0 12px;
+}
+.cont-modo-sim { background: #FFF7CC; color: #7a6a00; }
+.cont-modo-real { background: #E3F4E1; color: #1e6b32; }
+
+.cont-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.cont-stat {
+  font-size: 14px;
+  color: #444;
+}
+.cont-stat span {
+  font-weight: 700;
+  font-size: 16px;
+}
+.cont-ok span { color: #1e6b32; }
+.cont-skip span { color: #7a6a00; }
+.cont-err span { color: #C0392B; }
+
+.cont-detalle {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.cont-detalle summary {
+  cursor: pointer;
+  color: var(--blue);
+}
+.cont-detalle ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: #555;
+}
+
 .grid-productos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

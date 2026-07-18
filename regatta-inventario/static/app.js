@@ -382,6 +382,88 @@ el("btn-imprimir-qr").addEventListener("click", () => {
   ventana.document.close();
 });
 
+// ---------------- Contabilium ----------------
+
+const btnContabilium = el("btn-contabilium");
+if (btnContabilium) {
+  btnContabilium.addEventListener("click", async () => {
+    if (!cajaActualId) return;
+
+    // chequear que el servidor tenga credenciales
+    const estadoRes = await fetch(`${API}/contabilium/estado`);
+    const estado = await estadoRes.json();
+
+    if (!estado.configurado) {
+      abrirModal("modal-contabilium");
+      el("titulo-contabilium").textContent = "Subir a Contabilium";
+      el("cuerpo-contabilium").innerHTML =
+        `<p class="cont-aviso">Todavía no están cargadas las credenciales de Contabilium en el servidor. Configuralas en las variables de Railway para usar esta función.</p>`;
+      el("btn-confirmar-contabilium").hidden = true;
+      return;
+    }
+
+    ejecutarEmpuje(estado.dry_run);
+  });
+}
+
+async function ejecutarEmpuje(dryRun) {
+  const nombreCaja = el("titulo-caja").textContent;
+  abrirModal("modal-contabilium");
+  el("titulo-contabilium").textContent = `Subir "${nombreCaja}" a Contabilium`;
+  el("cuerpo-contabilium").innerHTML = `<p class="cont-cargando">Procesando…</p>`;
+  el("btn-confirmar-contabilium").hidden = true;
+
+  const res = await fetch(`${API}/cajas/${cajaActualId}/empujar-contabilium`, { method: "POST" });
+  if (!res.ok) {
+    const err = await res.json();
+    el("cuerpo-contabilium").innerHTML = `<p class="cont-aviso">${escapeHtml(err.detail || "Error al subir a Contabilium")}</p>`;
+    return;
+  }
+  const data = await res.json();
+  renderResumenContabilium(data);
+}
+
+function renderResumenContabilium(data) {
+  const creados = data.creados.length;
+  const salteados = data.salteados.length;
+  const errores = data.errores.length;
+
+  let html = "";
+
+  if (data.dry_run) {
+    html += `<p class="cont-modo cont-modo-sim">Modo simulación — no se creó nada todavía. Esto es lo que se haría:</p>`;
+  } else {
+    html += `<p class="cont-modo cont-modo-real">Subida real completada.</p>`;
+  }
+
+  html += `<div class="cont-resumen">
+    <div class="cont-stat cont-ok"><span>${creados}</span> ${data.dry_run ? "se crearían" : "creados"}</div>
+    <div class="cont-stat cont-skip"><span>${salteados}</span> ya existen (saltados)</div>
+    ${errores ? `<div class="cont-stat cont-err"><span>${errores}</span> con error</div>` : ""}
+  </div>`;
+
+  if (salteados) {
+    html += `<details class="cont-detalle"><summary>Ver saltados (${salteados})</summary><ul>`;
+    data.salteados.forEach((s) => {
+      html += `<li>${escapeHtml(s.nombre)}${s.codigo ? " — " + escapeHtml(s.codigo) : ""}</li>`;
+    });
+    html += `</ul></details>`;
+  }
+
+  if (errores) {
+    html += `<details class="cont-detalle"><summary>Ver errores (${errores})</summary><ul>`;
+    data.errores.forEach((e) => {
+      html += `<li>${escapeHtml(e.nombre)}: ${escapeHtml(e.error)}</li>`;
+    });
+    html += `</ul></details>`;
+  }
+
+  el("cuerpo-contabilium").innerHTML = html;
+  // en simulación no ofrecemos "subir ahora" desde acá: el cambio a real
+  // se hace desde las variables del servidor, a propósito, para máxima seguridad
+  el("btn-confirmar-contabilium").hidden = true;
+}
+
 // ---------------- Utils ----------------
 
 function escapeHtml(str) {

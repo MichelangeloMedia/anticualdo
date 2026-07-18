@@ -38,6 +38,7 @@
     <button id="btn-volver" class="btn btn-ghost">← Volver a cajas</button>
     <h2 id="titulo-caja"></h2>
     <div class="detalle-acciones">
+      <button id="btn-contabilium" class="btn btn-ghost">Subir a Contabilium</button>
       <button id="btn-qr-caja" class="btn btn-ghost">Ver QR</button>
       <button id="btn-nuevo-producto" class="btn btn-primary">+ Agregar producto</button>
     </div>
@@ -100,6 +101,18 @@
     <div class="modal-acciones">
       <button class="btn btn-ghost" data-cerrar-modal="modal-qr">Cerrar</button>
       <button id="btn-imprimir-qr" class="btn btn-primary">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: resultado Contabilium -->
+<div id="modal-contabilium" class="modal-overlay" hidden>
+  <div class="modal">
+    <h3 id="titulo-contabilium">Subir a Contabilium</h3>
+    <div id="cuerpo-contabilium" class="cuerpo-contabilium"></div>
+    <div class="modal-acciones">
+      <button class="btn btn-ghost" data-cerrar-modal="modal-contabilium">Cerrar</button>
+      <button id="btn-confirmar-contabilium" class="btn btn-primary" hidden>Subir ahora</button>
     </div>
   </div>
 </div>
