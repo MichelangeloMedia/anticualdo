@@ -83,6 +83,7 @@ function renderCajas(cajas) {
     card.innerHTML = `
       <button class="caja-borrar" title="Borrar caja">✕</button>
       <div class="caja-nombre">${escapeHtml(c.nombre)}</div>
+      ${c.rubro ? `<div class="caja-rubro">${escapeHtml(c.rubro)}</div>` : ""}
       <div class="caja-meta">${c.cantidad_productos} producto(s) · stock total ${c.stock_total}</div>
     `;
     card.addEventListener("click", () => mostrarVistaProductos(c.id));
@@ -99,16 +100,18 @@ function renderCajas(cajas) {
 
 el("btn-nueva-caja").addEventListener("click", () => {
   el("input-nombre-caja").value = "";
+  el("input-rubro-caja").value = "";
   abrirModal("modal-caja");
 });
 
 el("btn-guardar-caja").addEventListener("click", async () => {
   const nombre = el("input-nombre-caja").value.trim();
+  const rubro = el("input-rubro-caja").value.trim();
   if (!nombre) return toast("Poné un nombre para la caja");
   const res = await fetch(`${API}/cajas`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nombre }),
+    body: JSON.stringify({ nombre, rubro }),
   });
   if (!res.ok) {
     const err = await res.json();
