@@ -85,13 +85,35 @@ recién ahí pasás a modo real cambiando la variable `CONTABILIUM_DRY_RUN` a
 
 ### Variables de entorno (Railway)
 
-- `CONTABILIUM_CLIENT_ID` — client_id de la API (Mi cuenta → Config → API → Credenciales)
-- `CONTABILIUM_CLIENT_SECRET` — client_secret de la API
-- `CONTABILIUM_RUBRO` — rubro a asignar (opcional, default `Regatta`)
+- `CONTABILIUM_CLIENT_ID` — el mail de la cuenta de Contabilium
+- `CONTABILIUM_CLIENT_SECRET` — la API key (Mi cuenta → Config → API → Credenciales)
+- `CONTABILIUM_IVA` — alícuota de IVA por defecto (opcional, default `21`)
 - `CONTABILIUM_DRY_RUN` — `true` (default, simula) o `false` (crea de verdad)
 
 Si no cargás las credenciales, el botón "Subir a Contabilium" avisa que
 falta configurarlas y no hace nada.
+
+### Los rubros deben existir en Contabilium
+
+El rubro de cada caja (Regatta, Tempra, Marea…) **tiene que estar creado
+antes en Contabilium** (Ventas → Productos y servicios → Otras acciones →
+Administración de rubros). La app busca el rubro por nombre y usa su ID. Si
+el rubro que pusiste en la caja no existe en Contabilium, al subir te avisa
+"el rubro X no existe, crealo primero" (y te lista los que sí existen).
+
+### Stock
+
+Al subir una caja, después de crear cada producto nuevo se le carga el
+stock que tiene en el programa (se suma al que haya en Contabilium, que en
+un producto recién creado es 0). El stock **solo se carga a los productos
+que se crean nuevos**; a los que ya existían no se les toca el stock, para
+no pisar movimientos por ventas.
+
+El botón **"Traer stock"** hace lo inverso: consulta el stock actual de
+cada producto de la caja en Contabilium y lo actualiza en el programa.
+Es solo lectura de Contabilium (no escribe nada allá) y lo corrés cuando
+quieras, así no hay sincronización automática que pueda generar
+conflictos.
 
 ### Importante antes de pasar a modo real
 

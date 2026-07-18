@@ -244,6 +244,35 @@ def empujar_caja_contabilium(caja_id: int):
     return {"caja": caja["nombre"], **resumen}
 
 
+@app.post("/api/cajas/{caja_id}/traer-stock-contabilium")
+def traer_stock_contabilium(caja_id: int):
+    with get_db() as conn:
+        caja = conn.execute("SELECT * FROM cajas WHERE id=?", (caja_id,)).fetchone()
+        if not caja:
+            raise HTTPException(404, "Caja no encontrada")
+        productos = conn.execute(
+            "SELECT * FROM productos WHERE caja_id=?", (caja_id,)
+        ).fetchall()
+
+    if not contabilium.configurado():
+        raise HTTPException(400, "Faltan las credenciales de Contabilium en el servidor")
+
+    try:
+        resultado = contabilium.traer_stock([dict(p) for p in productos])
+    except contabilium.ContabiliumError as e:
+        raise HTTPException(502, f"Error de Contabilium: {e}")
+
+    # actualizar el stock en la base local con lo que trajo Contabilium
+    with get_db() as conn:
+        for item in resultado["actualizados"]:
+            conn.execute(
+                "UPDATE productos SET stock=?, actualizado_en=CURRENT_TIMESTAMP WHERE id=?",
+                (item["stock"], item["id"]),
+            )
+
+    return {"caja": caja["nombre"], **resultado}
+
+
 # --------------------------------------------------------------------------
 # Productos
 # --------------------------------------------------------------------------

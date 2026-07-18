@@ -191,6 +191,56 @@ def crear_producto(producto: dict, id_rubro: str, descripcion: str | None = None
     return {"simulado": False, "respuesta": resp.json()}
 
 
+def consultar_stock(codigo: str) -> float | None:
+    """Devuelve el StockActual total del producto por SKU, o None si no existe."""
+    if not codigo:
+        return None
+    resp = httpx.get(
+        f"{BASE_URL}/inventarios/getStockBySKU",
+        params={"codigo": codigo},
+        headers=_headers_auth(),
+        timeout=20,
+    )
+    time.sleep(0.4)
+    if resp.status_code != 200:
+        return None
+    data = resp.json()
+    try:
+        return float(data.get("StockActual", 0))
+    except (TypeError, ValueError):
+        return None
+
+
+def actualizar_stock(codigo: str, cantidad_total: float, id_deposito: int = 0) -> None:
+    """
+    Fija el stock TOTAL de un producto por SKU (endpoint 'actualizar').
+    id_deposito=0 usa el depósito por defecto (PRINCIPAL).
+    """
+    resp = httpx.post(
+        f"{BASE_URL}/inventarios/actualizar",
+        params={"Codigo": codigo, "Cantidad": cantidad_total, "IDDeposito": id_deposito},
+        headers=_headers_auth(),
+        timeout=30,
+    )
+    time.sleep(0.4)
+    if resp.status_code not in (200, 201):
+        raise ContabiliumError(
+            f"No se pudo actualizar el stock de '{codigo}' (HTTP {resp.status_code}): {resp.text[:300]}"
+        )
+
+
+def sumar_stock(codigo: str, cantidad_a_sumar: float) -> float:
+    """
+    Suma 'cantidad_a_sumar' al stock actual del producto en Contabilium.
+    Lee el stock actual, le suma, y fija el total. Devuelve el nuevo total.
+    """
+    actual = consultar_stock(codigo) or 0
+    nuevo_total = actual + cantidad_a_sumar
+    if not DRY_RUN:
+        actualizar_stock(codigo, nuevo_total)
+    return nuevo_total
+
+
 def empujar_caja(productos: list[dict], rubro: str) -> dict:
     """
     Recorre los productos de una caja. Crea los nuevos, saltea los que ya
@@ -211,7 +261,19 @@ def empujar_caja(productos: list[dict], rubro: str) -> dict:
                 salteados.append({"nombre": p["nombre"], "codigo": codigo, "motivo": "ya existe"})
                 continue
             resultado = crear_producto(p, id_rubro=id_rubro)
-            creados.append({"nombre": p["nombre"], "codigo": codigo, **resultado})
+            # cargar el stock del programa al producto recién creado
+            stock = int(p.get("stock") or 0)
+            stock_cargado = None
+            if codigo and stock > 0:
+                try:
+                    stock_cargado = sumar_stock(codigo, stock)
+                except ContabiliumError as e:
+                    # el producto se creó pero el stock falló: lo reportamos aparte
+                    resultado["stock_error"] = str(e)
+            creados.append({
+                "nombre": p["nombre"], "codigo": codigo,
+                "stock_cargado": stock_cargado, **resultado
+            })
         except ContabiliumError as e:
             errores.append({"nombre": p["nombre"], "codigo": codigo, "error": str(e)})
 
@@ -222,5 +284,37 @@ def empujar_caja(productos: list[dict], rubro: str) -> dict:
         "creados": creados,
         "salteados": salteados,
         "errores": errores,
+        "total": len(productos),
+    }
+
+
+def traer_stock(productos: list[dict]) -> dict:
+    """
+    Para cada producto (por código), consulta el stock actual en Contabilium.
+    Devuelve una lista de {codigo, stock} para que la app actualice su base.
+    No escribe nada en Contabilium: es solo lectura.
+    """
+    actualizados = []
+    sin_codigo = []
+    no_encontrados = []
+
+    for p in productos:
+        codigo = (p.get("codigo_interno") or "").strip()
+        if not codigo:
+            sin_codigo.append({"id": p.get("id"), "nombre": p["nombre"]})
+            continue
+        stock = consultar_stock(codigo)
+        if stock is None:
+            no_encontrados.append({"id": p.get("id"), "nombre": p["nombre"], "codigo": codigo})
+        else:
+            actualizados.append({
+                "id": p.get("id"), "nombre": p["nombre"], "codigo": codigo,
+                "stock": int(stock),
+            })
+
+    return {
+        "actualizados": actualizados,
+        "sin_codigo": sin_codigo,
+        "no_encontrados": no_encontrados,
         "total": len(productos),
     }
