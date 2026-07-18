@@ -17,11 +17,27 @@ function toast(msg) {
 
 // ---------------- Modales ----------------
 
-function abrirModal(id) { el(id).hidden = false; }
-function cerrarModal(id) { el(id).hidden = true; }
+function abrirModal(id) { el(id).removeAttribute("hidden"); }
+function cerrarModal(id) { el(id).setAttribute("hidden", ""); }
 
 document.querySelectorAll("[data-cerrar-modal]").forEach((btn) => {
   btn.addEventListener("click", () => cerrarModal(btn.dataset.cerrarModal));
+});
+
+// Cerrar al clickear el fondo oscuro (fuera del recuadro del modal)
+document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.setAttribute("hidden", "");
+  });
+});
+
+// Cerrar con la tecla Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal-overlay:not([hidden])").forEach((m) => {
+      m.setAttribute("hidden", "");
+    });
+  }
 });
 
 // ---------------- Vistas ----------------
@@ -96,6 +112,81 @@ el("btn-guardar-caja").addEventListener("click", async () => {
   toast("Caja creada");
   cargarCajas();
 });
+
+// ---------------- Buscador ----------------
+
+let debounceBuscar = null;
+
+el("input-buscar").addEventListener("input", (e) => {
+  const termino = e.target.value.trim();
+  el("btn-limpiar-buscar").hidden = termino === "";
+  clearTimeout(debounceBuscar);
+  debounceBuscar = setTimeout(() => buscar(termino), 250);
+});
+
+el("btn-limpiar-buscar").addEventListener("click", () => {
+  el("input-buscar").value = "";
+  el("btn-limpiar-buscar").hidden = true;
+  limpiarResultados();
+});
+
+async function buscar(termino) {
+  if (!termino) return limpiarResultados();
+  const res = await fetch(`${API}/buscar?q=${encodeURIComponent(termino)}`);
+  const data = await res.json();
+  renderResultados(data.resultados, termino);
+}
+
+function limpiarResultados() {
+  el("resultados-busqueda").hidden = true;
+  el("resultados-busqueda").innerHTML = "";
+  el("grid-cajas").hidden = false;
+  el("msg-sin-cajas").hidden = true;
+  cargarCajas();
+}
+
+function renderResultados(resultados, termino) {
+  const cont = el("resultados-busqueda");
+  el("grid-cajas").hidden = true;
+  el("msg-sin-cajas").hidden = true;
+  cont.hidden = false;
+
+  if (resultados.length === 0) {
+    cont.innerHTML = `<p class="msg-vacio">No se encontró ningún producto para "${escapeHtml(termino)}".</p>`;
+    return;
+  }
+
+  cont.innerHTML = `<p class="resultados-titulo">${resultados.length} resultado(s)</p>`;
+  const lista = document.createElement("div");
+  lista.className = "resultados-lista";
+
+  resultados.forEach((r) => {
+    const fotoUrl = r.foto ? `/uploads/${r.foto}` : null;
+    const fila = document.createElement("div");
+    fila.className = "resultado-fila";
+    fila.innerHTML = `
+      <div class="resultado-foto" style="${fotoUrl ? `background-image:url('${fotoUrl}')` : ""}">
+        ${fotoUrl ? "" : "—"}
+      </div>
+      <div class="resultado-info">
+        <div class="resultado-nombre">${escapeHtml(r.nombre)}</div>
+        <div class="resultado-meta">${r.codigo_interno ? escapeHtml(r.codigo_interno) + " · " : ""}stock ${r.stock} · $${r.precio}</div>
+      </div>
+      <button class="resultado-caja" title="Ir a la caja">📦 ${escapeHtml(r.caja_nombre)}</button>
+    `;
+    fila.querySelector(".resultado-caja").addEventListener("click", () => {
+      el("input-buscar").value = "";
+      el("btn-limpiar-buscar").hidden = true;
+      cont.hidden = true;
+      cont.innerHTML = "";
+      el("grid-cajas").hidden = false;
+      mostrarVistaProductos(r.caja_id);
+    });
+    lista.appendChild(fila);
+  });
+
+  cont.appendChild(lista);
+}
 
 // ---------------- Productos ----------------
 
