@@ -120,7 +120,7 @@ def resolver_id_rubro(nombre_rubro: str) -> str | None:
         return _rubros_cache[clave]
 
     resp = httpx.get(
-        f"{BASE_URL}/rubros",
+        f"{BASE_URL}/conceptos/rubros",
         headers=_headers_auth(),
         timeout=20,
     )
@@ -133,13 +133,23 @@ def resolver_id_rubro(nombre_rubro: str) -> str | None:
     rubros = data.get("Items", data) if isinstance(data, dict) else data
 
     encontrado = None
+    nombres_vistos = []
     for r in rubros:
-        nombre = str(r.get("Nombre", r.get("nombre", ""))).strip().upper()
+        nombre = str(r.get("Nombre", r.get("nombre", ""))).strip()
         rid = r.get("Id", r.get("id"))
         if nombre:
-            _rubros_cache[nombre] = str(rid)
-        if nombre == clave:
+            nombres_vistos.append(nombre)
+            _rubros_cache[nombre.upper()] = str(rid)
+        if nombre.upper() == clave:
             encontrado = str(rid)
+
+    if not encontrado:
+        disponibles = ", ".join(nombres_vistos) if nombres_vistos else "(ninguno)"
+        raise ContabiliumError(
+            f"El rubro '{nombre_rubro}' no existe en Contabilium. "
+            f"Rubros disponibles: {disponibles}. "
+            f"Creá el rubro en Contabilium (Administración de rubros) y volvé a intentar."
+        )
 
     return encontrado
 
@@ -187,13 +197,8 @@ def empujar_caja(productos: list[dict], rubro: str) -> dict:
     existen por código. Devuelve un resumen.
     'rubro' es el nombre del rubro (debe existir ya en Contabilium).
     """
-    # resolver el ID del rubro una sola vez
+    # resolver el ID del rubro una sola vez (tira ContabiliumError si no existe)
     id_rubro = resolver_id_rubro(rubro)
-    if not id_rubro:
-        raise ContabiliumError(
-            f"El rubro '{rubro}' no existe en Contabilium. Crealo primero en "
-            f"Contabilium (Administración de rubros) y volvé a intentar."
-        )
 
     creados = []
     salteados = []
