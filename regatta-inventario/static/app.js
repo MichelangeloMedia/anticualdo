@@ -467,6 +467,70 @@ function renderResumenContabilium(data) {
   el("btn-confirmar-contabilium").hidden = true;
 }
 
+// ---------------- Traer stock de Contabilium ----------------
+
+const btnTraerStock = el("btn-traer-stock");
+if (btnTraerStock) {
+  btnTraerStock.addEventListener("click", async () => {
+    if (!cajaActualId) return;
+
+    const estadoRes = await fetch(`${API}/contabilium/estado`);
+    const estado = await estadoRes.json();
+
+    abrirModal("modal-contabilium");
+    el("titulo-contabilium").textContent = "Traer stock de Contabilium";
+    el("btn-confirmar-contabilium").hidden = true;
+
+    if (!estado.configurado) {
+      el("cuerpo-contabilium").innerHTML =
+        `<p class="cont-aviso">Todavía no están cargadas las credenciales de Contabilium en el servidor.</p>`;
+      return;
+    }
+
+    el("cuerpo-contabilium").innerHTML = `<p class="cont-cargando">Consultando stock en Contabilium…</p>`;
+
+    const res = await fetch(`${API}/cajas/${cajaActualId}/traer-stock-contabilium`, { method: "POST" });
+    if (!res.ok) {
+      const err = await res.json();
+      el("cuerpo-contabilium").innerHTML = `<p class="cont-aviso">${escapeHtml(err.detail || "Error al traer stock")}</p>`;
+      return;
+    }
+    const data = await res.json();
+    renderResumenTraerStock(data);
+    cargarProductos(cajaActualId); // refrescar las tarjetas con el stock nuevo
+  });
+}
+
+function renderResumenTraerStock(data) {
+  const act = data.actualizados.length;
+  const noEnc = data.no_encontrados.length;
+  const sinCod = data.sin_codigo.length;
+
+  let html = `<p class="cont-modo cont-modo-real">Stock actualizado desde Contabilium.</p>`;
+  html += `<div class="cont-resumen">
+    <div class="cont-stat cont-ok"><span>${act}</span> actualizados</div>
+    ${noEnc ? `<div class="cont-stat cont-skip"><span>${noEnc}</span> no están en Contabilium</div>` : ""}
+    ${sinCod ? `<div class="cont-stat cont-skip"><span>${sinCod}</span> sin código</div>` : ""}
+  </div>`;
+
+  if (act) {
+    html += `<details class="cont-detalle"><summary>Ver actualizados (${act})</summary><ul>`;
+    data.actualizados.forEach((a) => {
+      html += `<li>${escapeHtml(a.nombre)} — stock ${a.stock}</li>`;
+    });
+    html += `</ul></details>`;
+  }
+  if (noEnc) {
+    html += `<details class="cont-detalle"><summary>No encontrados (${noEnc})</summary><ul>`;
+    data.no_encontrados.forEach((n) => {
+      html += `<li>${escapeHtml(n.nombre)}${n.codigo ? " — " + escapeHtml(n.codigo) : ""}</li>`;
+    });
+    html += `</ul></details>`;
+  }
+
+  el("cuerpo-contabilium").innerHTML = html;
+}
+
 // ---------------- Utils ----------------
 
 function escapeHtml(str) {
