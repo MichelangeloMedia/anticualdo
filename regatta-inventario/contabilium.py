@@ -6,11 +6,14 @@ lo SALTEA (no lo actualiza) para nunca disparar el sync a MercadoLibre
 sobre publicaciones vivas.
 
 Config por variables de entorno (Railway):
-  CONTABILIUM_CLIENT_ID      client_id de la API (Mi cuenta > Config > API)
-  CONTABILIUM_CLIENT_SECRET  client_secret de la API
-  CONTABILIUM_RUBRO          rubro a asignar (default "Regatta")
+  CONTABILIUM_CLIENT_ID      client_id (el mail de la cuenta)
+  CONTABILIUM_CLIENT_SECRET  la API key
+  CONTABILIUM_IVA            alícuota de IVA por defecto (default "21")
   CONTABILIUM_DRY_RUN        "true" (default) = simula, no crea nada real
                              "false" = crea de verdad
+
+El rubro se pasa por caja (nombre); la app resuelve su IdRubro contra
+Contabilium. Los rubros deben existir previamente en Contabilium.
 
 Mientras CONTABILIUM_DRY_RUN sea "true", este módulo NUNCA hace un POST
 de creación: solo consulta (búsqueda) y reporta qué haría.
@@ -26,8 +29,10 @@ TOKEN_URL = "https://rest.contabilium.com/token"
 
 CLIENT_ID = os.environ.get("CONTABILIUM_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("CONTABILIUM_CLIENT_SECRET", "")
-RUBRO = os.environ.get("CONTABILIUM_RUBRO", "Regatta")
 DRY_RUN = os.environ.get("CONTABILIUM_DRY_RUN", "true").lower() != "false"
+
+# IVA por defecto para los productos que se crean (Contabilium lo exige).
+IVA_DEFAULT = float(os.environ.get("CONTABILIUM_IVA", "21"))
 
 # Cloudflare bloquea requests sin User-Agent de navegador (ver notas del proyecto)
 HEADERS_BASE = {"User-Agent": "Mozilla/5.0 Chrome/120"}
@@ -101,29 +106,69 @@ def buscar_por_codigo(codigo: str) -> dict | None:
     return None
 
 
-def crear_producto(producto: dict) -> dict:
+# cache de rubros: nombre_normalizado -> id
+_rubros_cache = {}
+
+
+def resolver_id_rubro(nombre_rubro: str) -> str | None:
     """
-    Crea un producto nuevo en Contabilium con rubro RUBRO.
-    'producto' es un dict de la app: nombre, codigo_interno, stock, precio.
+    Devuelve el IdRubro de Contabilium para un nombre de rubro, o None si no
+    existe. Los rubros deben estar creados previamente en Contabilium.
+    """
+    clave = nombre_rubro.strip().upper()
+    if clave in _rubros_cache:
+        return _rubros_cache[clave]
+
+    resp = httpx.get(
+        f"{BASE_URL}/rubros",
+        headers=_headers_auth(),
+        timeout=20,
+    )
+    time.sleep(0.4)
+    if resp.status_code != 200:
+        raise ContabiliumError(f"No se pudieron traer los rubros (HTTP {resp.status_code}): {resp.text[:200]}")
+
+    data = resp.json()
+    # la respuesta puede venir como lista directa o como {"Items": [...]}
+    rubros = data.get("Items", data) if isinstance(data, dict) else data
+
+    encontrado = None
+    for r in rubros:
+        nombre = str(r.get("Nombre", r.get("nombre", ""))).strip().upper()
+        rid = r.get("Id", r.get("id"))
+        if nombre:
+            _rubros_cache[nombre] = str(rid)
+        if nombre == clave:
+            encontrado = str(rid)
+
+    return encontrado
+
+
+def crear_producto(producto: dict, id_rubro: str, descripcion: str | None = None) -> dict:
+    """
+    Crea un producto nuevo en Contabilium siguiendo el formato de la API.
+    'id_rubro' es el ID del rubro en Contabilium (obligatorio).
     En DRY_RUN no hace el POST: devuelve el payload que se enviaría.
     """
+    nombre = producto["nombre"]
     payload = {
-        "Tipo": "Producto",
-        "Nombre": producto["nombre"],
+        "nombre": nombre,
+        "Tipo": "P",  # P=Producto, S=Servicio, C=Combo
         "Codigo": producto.get("codigo_interno") or "",
+        "Descripcion": descripcion or nombre,
         "Precio": float(producto.get("precio") or 0),
-        "Rubro": RUBRO,
-        "Estado": "Activo",
-        # el stock inicial se maneja aparte según el flujo de inventarios;
-        # se deja en el payload para referencia del dry-run
-        "StockInicial": int(producto.get("stock") or 0),
+        "Iva": IVA_DEFAULT,
+        "StockMinimo": 0,
+        "Observaciones": "",
+        "Estado": "A",  # A=Activo, I=Inactivo
+        "IdRubro": str(id_rubro),
     }
 
     if DRY_RUN:
         return {"simulado": True, "payload": payload}
 
     resp = httpx.post(
-        f"{BASE_URL}/conceptos",
+        f"{BASE_URL}/conceptos/",
         json=payload,
         headers=_headers_auth(),
         timeout=30,
@@ -131,16 +176,25 @@ def crear_producto(producto: dict) -> dict:
     time.sleep(0.4)
     if resp.status_code not in (200, 201):
         raise ContabiliumError(
-            f"No se pudo crear '{producto['nombre']}' (HTTP {resp.status_code}): {resp.text[:200]}"
+            f"No se pudo crear '{nombre}' (HTTP {resp.status_code}): {resp.text[:400]}"
         )
     return {"simulado": False, "respuesta": resp.json()}
 
 
-def empujar_caja(productos: list[dict]) -> dict:
+def empujar_caja(productos: list[dict], rubro: str) -> dict:
     """
     Recorre los productos de una caja. Crea los nuevos, saltea los que ya
     existen por código. Devuelve un resumen.
+    'rubro' es el nombre del rubro (debe existir ya en Contabilium).
     """
+    # resolver el ID del rubro una sola vez
+    id_rubro = resolver_id_rubro(rubro)
+    if not id_rubro:
+        raise ContabiliumError(
+            f"El rubro '{rubro}' no existe en Contabilium. Crealo primero en "
+            f"Contabilium (Administración de rubros) y volvé a intentar."
+        )
+
     creados = []
     salteados = []
     errores = []
@@ -151,14 +205,15 @@ def empujar_caja(productos: list[dict]) -> dict:
             if codigo and buscar_por_codigo(codigo):
                 salteados.append({"nombre": p["nombre"], "codigo": codigo, "motivo": "ya existe"})
                 continue
-            resultado = crear_producto(p)
+            resultado = crear_producto(p, id_rubro=id_rubro)
             creados.append({"nombre": p["nombre"], "codigo": codigo, **resultado})
         except ContabiliumError as e:
             errores.append({"nombre": p["nombre"], "codigo": codigo, "error": str(e)})
 
     return {
         "dry_run": DRY_RUN,
-        "rubro": RUBRO,
+        "rubro": rubro,
+        "id_rubro": id_rubro,
         "creados": creados,
         "salteados": salteados,
         "errores": errores,
