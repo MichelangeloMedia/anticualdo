@@ -308,3 +308,4 @@ def _borrar_archivo_foto(nombre_archivo: str):
 
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 app.mount("/", StaticFiles(directory=BASE_DIR / "static", html=True), name="static")
+
